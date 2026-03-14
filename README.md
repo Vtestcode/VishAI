@@ -1,0 +1,76 @@
+# RAG Chatbot
+
+A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, and Pinecone.
+
+## Architecture
+
+- Source documents live in Amazon S3.
+- Embeddings are generated with OpenAI.
+- Vector search runs on Pinecone.
+- Recruiters access the deployed web app and ask questions through the site.
+
+This project is intentionally configured for hosted use. It does not rely on local document storage or a local vector database.
+
+## Features
+
+- Ingest `.txt`, `.md`, and `.pdf` files from S3.
+- Store and query embeddings in Pinecone.
+- Answer recruiter-style questions about Vishal's portfolio.
+- Redirect unanswered questions to email when configured.
+- Serve both a full-page experience at `/` and an embeddable widget at `/widget`.
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `CONTACT_EMAIL` | No | Email shown when the answer is not covered by the documents |
+| `MODEL_NAME` | No | OpenAI chat model, default `gpt-4o-mini` |
+| `TOP_K` | No | Number of retrieved chunks |
+| `CHUNK_SIZE` | No | Chunk size for ingestion |
+| `CHUNK_OVERLAP` | No | Chunk overlap for ingestion |
+| `AWS_REGION` | Yes | AWS region for S3 |
+| `S3_BUCKET` | Yes | S3 bucket containing portfolio documents |
+| `S3_PREFIX` | No | Optional S3 prefix/folder |
+| `PINECONE_API_KEY` | Yes | Pinecone API key |
+| `PINECONE_INDEX_NAME` | Yes | Pinecone index name |
+| `PINECONE_NAMESPACE` | No | Pinecone namespace, default `rag-docs` |
+| `PINECONE_CLOUD` | No | Pinecone cloud, default `aws` |
+| `PINECONE_REGION` | No | Pinecone region, default `us-east-1` |
+
+## Deployment Flow
+
+1. Upload portfolio documents to S3.
+2. Set the environment variables in Heroku.
+3. Deploy the app.
+4. Call `POST /ingest` once to rebuild Pinecone from S3.
+5. Share the deployed URL with recruiters.
+
+## Heroku Example
+
+```bash
+heroku config:set OPENAI_API_KEY=sk-your-key-here
+heroku config:set CONTACT_EMAIL=you@example.com
+heroku config:set AWS_REGION=us-east-1
+heroku config:set S3_BUCKET=your-rag-docs-bucket
+heroku config:set S3_PREFIX=knowledge-base/
+heroku config:set PINECONE_API_KEY=your-pinecone-api-key
+heroku config:set PINECONE_INDEX_NAME=rag-chatbot
+heroku config:set PINECONE_NAMESPACE=portfolio_docs
+heroku config:set PINECONE_CLOUD=aws
+heroku config:set PINECONE_REGION=us-east-1
+```
+
+Then trigger ingestion:
+
+```bash
+curl -X POST https://your-app-name.herokuapp.com/ingest
+```
+
+## API Endpoints
+
+- `GET /` renders the main recruiter-facing chat UI.
+- `GET /widget` renders the embeddable widget.
+- `GET /health` returns a health response.
+- `POST /ingest` reloads S3 documents and rebuilds Pinecone.
+- `POST /chat` answers user questions using retrieved portfolio content.

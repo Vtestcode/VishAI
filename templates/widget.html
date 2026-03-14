@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ask Vishal</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <style>
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget-wrapper">
+    <div class="widget-topbar">
+      <h1>Ask Vishal</h1>
+      <p>Portfolio answers for recruiters, collaborators, and hiring teams.</p>
+    </div>
+
+    <div class="chat-messages" id="messages">
+      <div class="message bot">
+        Hello, ask me anything about Vishal.
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="input-shell">
+        <input
+          type="text"
+          id="userInput"
+          placeholder="Ask about experience, projects, or skills..."
+          autocomplete="off"
+        />
+        <button id="sendBtn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const inputEl = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const API_BASE = window.location.origin;
+
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !sendBtn.disabled) sendMessage();
+    });
+
+    function appendMessage(role, html) {
+      const div = document.createElement("div");
+      div.className = `message ${role}`;
+      div.innerHTML = html;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function setLoading(on) {
+      sendBtn.disabled = on;
+      inputEl.disabled = on;
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      appendMessage("user", escapeHtml(text));
+      inputEl.value = "";
+      setLoading(true);
+      appendMessage("bot", '<span class="typing">Thinking</span>');
+
+      try {
+        const res = await fetch(`${API_BASE}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, session_id: null }),
+        });
+
+        messagesEl.lastElementChild.remove();
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Server error ${res.status}`);
+        }
+
+        const data = await res.json();
+        appendMessage("bot", escapeHtml(data.answer));
+      } catch (err) {
+        if (messagesEl.lastElementChild) {
+          messagesEl.lastElementChild.remove();
+        }
+        appendMessage("bot", `<em>Error: ${escapeHtml(err.message)}</em>`);
+      } finally {
+        setLoading(false);
+        inputEl.focus();
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
