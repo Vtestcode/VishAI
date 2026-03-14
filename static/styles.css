@@ -272,7 +272,7 @@ body::after {
 }
 
 .message.user::before {
-  content: "Recruiter";
+  content: "You";
   color: rgba(255, 247, 255, 0.82);
 }
 
