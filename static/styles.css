@@ -285,7 +285,7 @@ body::after {
 }
 
 .message.bot::before {
-  content: "Vishal AI";
+  content: "VishAI";
   color: var(--accent-strong);
 }
 
