@@ -72,11 +72,25 @@ def _expand_query_variants(query: str) -> List[str]:
             ]
         )
 
-    if any(phrase in normalized for phrase in ["project", "projects"]):
+    if any(
+        phrase in normalized
+        for phrase in [
+            "project",
+            "projects",
+            "stand out",
+            "standout",
+            "most impressive",
+            "best project",
+            "best projects",
+            "notable work",
+        ]
+    ):
         variants.extend(
             [
                 f"{query} portfolio projects case studies implementations",
                 "Vishal notable projects portfolio work achievements",
+                "Vishal strongest projects most impressive work notable achievements case studies",
+                "important projects standout projects highlighted projects Vishal",
             ]
         )
 
