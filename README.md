@@ -48,33 +48,3 @@ This project is intentionally configured for hosted use. It does not rely on loc
 4. Call `POST /ingest` once to rebuild Pinecone from S3.
 5. Share the deployed URL with recruiters.
 
-## Heroku Example
-
-```bash
-heroku config:set OPENAI_API_KEY=sk-your-key-here
-heroku config:set CONTACT_EMAIL=you@example.com
-heroku config:set AWS_REGION=us-east-1
-heroku config:set S3_BUCKET=your-rag-docs-bucket
-heroku config:set S3_PREFIX=knowledge-base/
-heroku config:set CHAT_LOG_BUCKET=your-rag-docs-bucket
-heroku config:set CHAT_LOG_PREFIX=chat-logs/
-heroku config:set PINECONE_API_KEY=your-pinecone-api-key
-heroku config:set PINECONE_INDEX_NAME=rag-chatbot
-heroku config:set PINECONE_NAMESPACE=portfolio_docs
-heroku config:set PINECONE_CLOUD=aws
-heroku config:set PINECONE_REGION=us-east-1
-```
-
-Then trigger ingestion:
-
-```bash
-curl -X POST https://your-app-name.herokuapp.com/ingest
-```
-
-## API Endpoints
-
-- `GET /` renders the main recruiter-facing chat UI.
-- `GET /widget` renders the embeddable widget.
-- `GET /health` returns a health response.
-- `POST /ingest` reloads S3 documents and rebuilds Pinecone.
-- `POST /chat` answers user questions using retrieved portfolio content.
