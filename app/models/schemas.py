@@ -33,6 +33,7 @@ class ChatResponse(BaseModel):
     """Response body for POST /chat."""
     answer: str
     sources: list[SourceSnippet] = Field(default_factory=list)
+    session_id: Optional[str] = None
 
 
 # ── Ingest ──────────────────────────────────────────────────────────────

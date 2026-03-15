@@ -32,6 +32,8 @@ This project is intentionally configured for hosted use. It does not rely on loc
 | `AWS_REGION` | Yes | AWS region for S3 |
 | `S3_BUCKET` | Yes | S3 bucket containing portfolio documents |
 | `S3_PREFIX` | No | Optional S3 prefix/folder |
+| `CHAT_LOG_BUCKET` | No | S3 bucket for persisted chat logs, defaults to `S3_BUCKET` |
+| `CHAT_LOG_PREFIX` | No | S3 prefix for chat logs, default `chat-logs/` |
 | `PINECONE_API_KEY` | Yes | Pinecone API key |
 | `PINECONE_INDEX_NAME` | Yes | Pinecone index name |
 | `PINECONE_NAMESPACE` | No | Pinecone namespace, default `rag-docs` |
@@ -54,6 +56,8 @@ heroku config:set CONTACT_EMAIL=you@example.com
 heroku config:set AWS_REGION=us-east-1
 heroku config:set S3_BUCKET=your-rag-docs-bucket
 heroku config:set S3_PREFIX=knowledge-base/
+heroku config:set CHAT_LOG_BUCKET=your-rag-docs-bucket
+heroku config:set CHAT_LOG_PREFIX=chat-logs/
 heroku config:set PINECONE_API_KEY=your-pinecone-api-key
 heroku config:set PINECONE_INDEX_NAME=rag-chatbot
 heroku config:set PINECONE_NAMESPACE=portfolio_docs

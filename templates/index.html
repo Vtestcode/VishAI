@@ -64,6 +64,7 @@
     const messagesEl = document.getElementById("messages");
     const inputEl = document.getElementById("userInput");
     const sendBtn = document.getElementById("sendBtn");
+    const SESSION_KEY = "vishal_portfolio_chat_session";
 
     inputEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !sendBtn.disabled) sendMessage();
@@ -95,7 +96,10 @@
         const res = await fetch("/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, session_id: null }),
+          body: JSON.stringify({
+            message: text,
+            session_id: localStorage.getItem(SESSION_KEY),
+          }),
         });
 
         messagesEl.lastElementChild.remove();
@@ -106,6 +110,9 @@
         }
 
         const data = await res.json();
+        if (data.session_id) {
+          localStorage.setItem(SESSION_KEY, data.session_id);
+        }
         appendMessage("bot", escapeHtml(data.answer));
       } catch (err) {
         if (messagesEl.lastElementChild) {

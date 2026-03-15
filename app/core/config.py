@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     s3_bucket: str = os.getenv("S3_BUCKET", "")
     s3_prefix: str = os.getenv("S3_PREFIX", "")
     aws_region: str = os.getenv("AWS_REGION", "")
+    chat_log_bucket: str = os.getenv("CHAT_LOG_BUCKET", "")
+    chat_log_prefix: str = os.getenv("CHAT_LOG_PREFIX", "chat-logs/")
 
     # --- Pinecone vector store ---
     pinecone_api_key: str = os.getenv("PINECONE_API_KEY", "")
