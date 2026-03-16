@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VishAI</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="{{ request.url_for('static', path='styles.css') }}?v=20260315-ui2" />
   <style>
     html, body {
       height: 100%;
@@ -59,6 +59,6 @@
     </div>
   </div>
 
-  <script src="/static/chat.js"></script>
+  <script src="{{ request.url_for('static', path='chat.js') }}?v=20260315-ui2"></script>
 </body>
 </html>
