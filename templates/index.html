@@ -13,84 +13,144 @@
     <div class="noise"></div>
 
     <div class="app-frame">
-      <section class="hero-chat-grid">
-        <article class="story-panel glass-panel">
-          <div class="brand-lockup">
-            <div class="brand-mark" aria-hidden="true">VA</div>
-            <div>
-              <div class="eyebrow">VishAI</div>
-              <div class="brand-subtitle">A smarter way to get to know Vishal</div>
-            </div>
-          </div>
-
-          <h1 class="story-title">A conversational way to explore Vishal's work.</h1>
-          <p class="story-summary">
-            This interface turns a portfolio into a guided conversation. Ask about experience, standout projects,
-            engineering depth, interests, working style, or background and get concise answers shaped around the underlying docs.
-          </p>
-
-          <div class="story-highlights">
-            <div class="highlight-card">
-              <strong>Faster signal</strong>
-              <span>Jump straight to strengths, projects, and context without digging through pages.</span>
-            </div>
-            <div class="highlight-card">
-              <strong>Natural flow</strong>
-              <span>Follow-up questions help the conversation feel direct and easy to explore.</span>
-            </div>
-          </div>
-        </article>
-
-        <section
-          class="chat-panel glass-panel"
-          data-chat-root
-          data-endpoint="/chat"
-          data-session-key="vishal_portfolio_chat_session"
-        >
-          <div class="chat-topbar">
-            <div class="mini-brand">
-              <span class="mini-brand-mark">VA</span>
+      <section class="site-hero">
+        <div class="hero-chat-grid">
+          <article class="story-panel glass-panel">
+            <div class="brand-lockup">
+              <div class="brand-mark" aria-hidden="true">VA</div>
               <div>
-                <h1>VishAI</h1>
-                <p>Start chatting right away, or use one of the quick prompts to learn more.</p>
+                <div class="eyebrow">VishAI</div>
+                <div class="brand-subtitle">Portfolio intelligence, presented like a product</div>
               </div>
             </div>
-            <div class="presence" data-status>Ready for the next question</div>
-          </div>
 
-          <div class="quick-prompts" aria-label="Suggested prompts">
-            <button class="prompt-chip" type="button" data-prompt="What kind of engineer is Vishal?">Engineering profile</button>
-            <button class="prompt-chip" type="button" data-prompt="Which projects stand out most and why?">Top projects</button>
-            <button class="prompt-chip" type="button" data-prompt="What is Vishal interested in building or working on?">Interests</button>
-            <button class="prompt-chip" type="button" data-prompt="What should someone know about Vishal's background and style?">About Vishal</button>
-          </div>
-
-          <div class="chat-messages" data-messages>
-            <div class="message bot">
-              <p>Hello. I can help you understand Vishal's background, projects, and strengths. Ask a direct question or start with one of the prompt chips above.</p>
+            <div class="story-copy">
+              <span class="hero-pill">Blue-green redesign</span>
+              <h1 class="story-title">A richer website for exploring Vishal's work through conversation.</h1>
+              <p class="story-summary">
+                This interface turns a portfolio into a guided experience. Ask about engineering depth, project impact,
+                preferred technologies, or working style and get focused answers grounded in the underlying material.
+              </p>
             </div>
-          </div>
 
-          <div class="chat-input-area">
-            <div class="composer">
-              <textarea
-                data-input
-                placeholder="Ask about experience, systems, projects, interests, style, or background..."
-                autocomplete="off"
-              ></textarea>
-              <div class="composer-bar">
-                <div class="composer-meta">
-                  <span data-char-count>0 chars</span>
-                  <span>Enter to send, Shift+Enter for a new line</span>
+            <div class="story-actions">
+              <a class="hero-button primary" href="#chat-experience">Start exploring</a>
+              <a class="hero-button secondary" href="#site-highlights">See highlights</a>
+            </div>
+
+            <div class="story-highlights">
+              <div class="highlight-card">
+                <strong>Faster signal</strong>
+                <span>Understand strengths, projects, and context without digging through multiple pages.</span>
+              </div>
+              <div class="highlight-card">
+                <strong>Guided discovery</strong>
+                <span>Prompt chips and follow-ups make it easier to keep learning naturally.</span>
+              </div>
+              <div class="highlight-card">
+                <strong>Clearer visual rhythm</strong>
+                <span>The site now feels more intentional, modern, and cohesive across sections.</span>
+              </div>
+              <div class="highlight-card">
+                <strong>Embedded intelligence</strong>
+                <span>The chat experience stays central while the rest of the page supports it better.</span>
+              </div>
+            </div>
+          </article>
+
+          <section
+            id="chat-experience"
+            class="chat-panel glass-panel"
+            data-chat-root
+            data-endpoint="/chat"
+            data-session-key="vishal_portfolio_chat_session"
+          >
+            <div class="chat-topbar">
+              <div class="mini-brand">
+                <span class="mini-brand-mark">VA</span>
+                <div>
+                  <h1>VishAI</h1>
+                  <p>Start with a quick prompt or ask a direct question about Vishal's work.</p>
                 </div>
-                <button class="send-button" type="button" data-send>Send message</button>
+              </div>
+              <div class="presence" data-status>Ready for the next question</div>
+            </div>
+
+            <div class="quick-prompts" aria-label="Suggested prompts">
+              <button class="prompt-chip" type="button" data-prompt="What kind of engineer is Vishal?">Engineering profile</button>
+              <button class="prompt-chip" type="button" data-prompt="Which projects stand out most and why?">Top projects</button>
+              <button class="prompt-chip" type="button" data-prompt="What technologies does Vishal use most?">Tech stack</button>
+              <button class="prompt-chip" type="button" data-prompt="What is Vishal interested in building or working on?">Interests</button>
+              <button class="prompt-chip" type="button" data-prompt="What should someone know about Vishal's background and style?">About Vishal</button>
+            </div>
+
+            <div class="chat-messages" data-messages>
+              <div class="message bot">
+                <p>Hello. I can help you understand Vishal's background, projects, and strengths. Ask a direct question or start with one of the prompt chips above.</p>
               </div>
             </div>
-            <p class="input-hint">
-              Try: "What makes Vishal stand out?", "Which project should I look at first?", or "Tell me about Vishal's background."
-            </p>
-          </div>
-        </section>
+
+            <div class="chat-input-area">
+              <div class="composer">
+                <textarea
+                  data-input
+                  placeholder="Ask about experience, systems, projects, interests, style, or background..."
+                  autocomplete="off"
+                ></textarea>
+                <div class="composer-bar">
+                  <div class="composer-meta">
+                    <span data-char-count>0 chars</span>
+                    <span>Enter to send, Shift+Enter for a new line</span>
+                  </div>
+                  <button class="send-button" type="button" data-send>Send message</button>
+                </div>
+              </div>
+              <p class="input-hint">
+                Try: "What makes Vishal stand out?", "Which project should I look at first?", or "Tell me about Vishal's background."
+              </p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="site-highlights" class="site-section site-highlights-grid">
+        <article class="feature-panel glass-panel">
+          <span class="section-label">Why This Works</span>
+          <h2>Less static portfolio, more guided experience.</h2>
+          <p>
+            The landing page now introduces the product clearly, supports the chat visually, and gives visitors more context
+            before they type their first question.
+          </p>
+        </article>
+        <article class="feature-panel glass-panel">
+          <span class="section-label">Visual Direction</span>
+          <h2>Cooler tones, stronger contrast, cleaner sections.</h2>
+          <p>
+            The blue-green palette gives the website a more modern and technical feel while preserving readability and focus.
+          </p>
+        </article>
+        <article class="feature-panel glass-panel">
+          <span class="section-label">Conversation First</span>
+          <h2>Everything supports the main interaction.</h2>
+          <p>
+            Supporting content explains value quickly, but the chat remains the main action instead of getting buried.
+          </p>
+        </article>
+      </section>
+
+      <section class="site-section insight-band glass-panel">
+        <div>
+          <span class="section-label">What Visitors Can Ask</span>
+          <h2>Projects, strengths, background, engineering style, and next-fit roles.</h2>
+        </div>
+        <div class="insight-list" aria-label="Example topics">
+          <span>Project impact</span>
+          <span>Systems thinking</span>
+          <span>Technical depth</span>
+          <span>Career story</span>
+          <span>Preferred stack</span>
+          <span>Team fit</span>
+        </div>
       </section>
     </div>
   </main>
