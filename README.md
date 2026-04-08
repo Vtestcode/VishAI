@@ -18,7 +18,7 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, and 
 - Use section-aware chunking plus optional RAPTOR-style summary chunks.
 - Incrementally index only changed S3 files using an S3 manifest.
 - Translate queries, retrieve candidates, rerank context, and validate answers.
-- Answer recruiter-style questions about Vishal's portfolio.
+- Answer recruiter-style questions.
 - Redirect unanswered questions to email when configured.
 - Serve both a full-page experience at `/` and an embeddable widget at `/widget`.
 
