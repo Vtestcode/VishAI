@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Iterable
 
 from langchain_openai import OpenAIEmbeddings
 
@@ -47,8 +48,58 @@ def rebuild_vector_store(settings: Settings, documents):
             namespace,
         )
 
-    vector_store.add_documents(documents=documents)
+    add_documents_to_vector_store(vector_store, documents)
     return vector_store
+
+
+def update_vector_store(settings: Settings, documents, deleted_sources: Iterable[str] = ()):
+    """Replace changed documents and remove deleted sources in the configured namespace."""
+    from pinecone.openapi_support.exceptions import PineconeException
+
+    vector_store = _get_pinecone_vector_store(settings, ensure_exists=True)
+    namespace = _get_pinecone_namespace(settings)
+
+    sources_to_replace = {
+        str(doc.metadata.get("source", ""))
+        for doc in documents
+        if doc.metadata.get("source")
+    }
+    sources_to_delete = sorted(sources_to_replace | set(deleted_sources))
+
+    for source in sources_to_delete:
+        logger.info("Deleting old vectors for source %s from namespace %s", source, namespace)
+        try:
+            vector_store.index.delete(
+                namespace=namespace,
+                filter={"source": {"$eq": source}},
+            )
+        except PineconeException as exc:
+            if "Namespace not found" not in str(exc):
+                raise
+            logger.info(
+                "Pinecone namespace %s does not exist yet; continuing with ingest.",
+                namespace,
+            )
+
+    add_documents_to_vector_store(vector_store, documents)
+    return vector_store
+
+
+def add_documents_to_vector_store(vector_store, documents):
+    """Add documents with stable ids when supported by the LangChain Pinecone wrapper."""
+    documents = list(documents)
+    if not documents:
+        return
+
+    ids = [str(doc.metadata.get("chunk_id", "")) for doc in documents]
+    if all(ids):
+        try:
+            vector_store.add_documents(documents=documents, ids=ids)
+            return
+        except TypeError:
+            logger.info("PineconeVectorStore does not accept ids; falling back to generated ids.")
+
+    vector_store.add_documents(documents=documents)
 
 
 def _get_pinecone_vector_store(settings: Settings, ensure_exists: bool = False):

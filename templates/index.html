@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VishAI</title>
-  <link rel="stylesheet" href="{{ request.url_for('static', path='styles.css') }}?v=20260315-ui2" />
+  <link rel="stylesheet" href="{{ request.url_for('static', path='styles.css') }}?v=20260407-stream" />
 </head>
 <body>
   <main class="page-shell">
@@ -45,6 +45,7 @@
           class="chat-panel glass-panel"
           data-chat-root
           data-endpoint="/chat"
+          data-stream-endpoint="/chat/stream"
           data-session-key="vishal_portfolio_chat_session"
         >
           <div class="chat-topbar">
@@ -95,6 +96,6 @@
     </div>
   </main>
 
-  <script src="{{ request.url_for('static', path='chat.js') }}?v=20260315-ui2"></script>
+  <script src="{{ request.url_for('static', path='chat.js') }}?v=20260407-stream"></script>
 </body>
 </html>

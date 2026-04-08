@@ -34,11 +34,18 @@ class Settings(BaseSettings):
     chunk_size: int = 1000
     chunk_overlap: int = 200
     top_k: int = 5
+    retrieval_candidate_k: int = 15
+    query_rewrite_count: int = 3
+    enable_reranking: bool = True
+    enable_answer_validation: bool = True
+    enable_raptor: bool = True
+    raptor_group_size: int = 6
 
     # --- S3 document storage ---
     s3_bucket: str = os.getenv("S3_BUCKET", "")
     s3_prefix: str = os.getenv("S3_PREFIX", "")
     aws_region: str = os.getenv("AWS_REGION", "")
+    rag_manifest_key: str = os.getenv("RAG_MANIFEST_KEY", "")
     chat_log_bucket: str = os.getenv("CHAT_LOG_BUCKET", "")
     chat_log_prefix: str = os.getenv("CHAT_LOG_PREFIX", "chat-logs/")
 

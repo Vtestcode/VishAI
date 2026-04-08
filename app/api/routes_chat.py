@@ -14,10 +14,18 @@ from uuid import uuid4
 import boto3
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.core.config import Settings, get_settings
-from app.models.schemas import ChatRequest, ChatResponse
-from app.rag.llm import generate_answer, generate_small_talk_answer, is_small_talk
+from app.models.schemas import ChatRequest, ChatResponse, SourceSnippet
+from app.rag.llm import (
+    finalize_streamed_answer,
+    generate_answer,
+    generate_small_talk_answer,
+    is_small_talk,
+    stream_answer,
+    stream_small_talk_answer,
+)
 from app.rag.retriever import retrieve_relevant_chunks
 
 router = APIRouter(tags=["chat"])
@@ -40,13 +48,21 @@ async def chat(
     try:
         if is_small_talk(body.message):
             answer = generate_small_talk_answer(body.message, settings=settings)
+            sources = []
         else:
             chunks = retrieve_relevant_chunks(body.message, settings=settings)
             answer = generate_answer(body.message, chunks, settings=settings)
+            sources = [
+                SourceSnippet(
+                    text=doc.page_content[:500],
+                    metadata=doc.metadata,
+                )
+                for doc, _score in chunks
+            ]
 
         _append_chat_message(settings, session_id, "user", body.message)
         _append_chat_message(settings, session_id, "assistant", answer)
-        return ChatResponse(answer=answer, sources=[], session_id=session_id)
+        return ChatResponse(answer=answer, sources=sources, session_id=session_id)
 
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -55,6 +71,62 @@ async def chat(
             status_code=500,
             detail=f"Chat failed: {exc}",
         )
+
+
+@router.post("/chat/stream")
+async def chat_stream(
+    body: ChatRequest,
+    settings: Settings = Depends(get_settings),
+) -> StreamingResponse:
+    """Stream a chat response as newline-delimited JSON events."""
+    session_id = body.session_id or uuid4().hex
+
+    def event_stream():
+        answer_parts: list[str] = []
+        chunks = []
+
+        try:
+            yield _json_event("session", {"session_id": session_id})
+
+            if is_small_talk(body.message):
+                yield _json_event("status", {"message": "Composing answer..."})
+                for token in stream_small_talk_answer(body.message, settings=settings):
+                    answer_parts.append(token)
+                    yield _json_event("token", {"text": token})
+                answer = "".join(answer_parts).strip()
+            else:
+                yield _json_event("status", {"message": "Searching the knowledge base..."})
+                chunks = retrieve_relevant_chunks(body.message, settings=settings)
+                sources = [
+                    {
+                        "text": doc.page_content[:500],
+                        "metadata": doc.metadata,
+                    }
+                    for doc, _score in chunks
+                ]
+                yield _json_event("sources", {"sources": sources})
+                yield _json_event("status", {"message": "Writing the answer..."})
+                for token in stream_answer(body.message, chunks, settings=settings):
+                    answer_parts.append(token)
+                    yield _json_event("token", {"text": token})
+
+                streamed_answer = "".join(answer_parts).strip()
+                yield _json_event("status", {"message": "Checking the answer..."})
+                answer = finalize_streamed_answer(body.message, streamed_answer, chunks, settings)
+                if answer != streamed_answer:
+                    yield _json_event("replace", {"text": answer})
+
+            _append_chat_message(settings, session_id, "user", body.message)
+            _append_chat_message(settings, session_id, "assistant", answer)
+            yield _json_event("done", {"answer": answer, "session_id": session_id})
+        except Exception as exc:
+            yield _json_event("error", {"message": str(exc)})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 def _append_chat_message(
@@ -123,3 +195,7 @@ def _read_chat_log(s3_client, bucket: str, key: str) -> dict:
         "updated_at": timestamp,
         "messages": [],
     }
+
+
+def _json_event(event_type: str, payload: dict) -> str:
+    return json.dumps({"type": event_type, **payload}, ensure_ascii=True) + "\n"

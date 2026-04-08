@@ -9,6 +9,7 @@
   const charCountEl = root.querySelector("[data-char-count]");
   const prompts = root.querySelectorAll("[data-prompt]");
   const endpoint = root.dataset.endpoint || "/chat";
+  const streamEndpoint = root.dataset.streamEndpoint || "/chat/stream";
   const sessionKey = root.dataset.sessionKey || "vishal_portfolio_chat_session";
 
   inputEl.addEventListener("input", () => {
@@ -61,6 +62,15 @@
     return message;
   }
 
+  function updateMessage(message, content, options) {
+    if (options && options.html) {
+      message.innerHTML = content;
+    } else {
+      message.innerHTML = formatText(content);
+    }
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
   function formatText(text) {
     return escapeHtml(text)
       .split(/\n{2,}/)
@@ -77,41 +87,108 @@
     autoResize();
     updateMeta();
     setLoading(true);
-    const loadingMessage = appendMessage("bot", '<span class="typing">Composing answer</span>', { html: true });
+    const botMessage = appendMessage("bot", '<span class="typing">Searching the knowledge base</span>', { html: true });
 
     try {
-      const response = await fetch(endpoint, {
+      await sendStreamingMessage(text, botMessage);
+    } catch (error) {
+      try {
+        await sendJsonMessage(text, botMessage);
+      } catch (fallbackError) {
+        appendMessage("bot", `Error: ${fallbackError.message}`);
+        botMessage.remove();
+        statusEl.textContent = "Connection issue";
+      }
+    } finally {
+      setLoading(false);
+      inputEl.focus();
+    }
+  }
+
+  async function sendStreamingMessage(text, botMessage) {
+    const response = await fetch(streamEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: text,
+        session_id: localStorage.getItem(sessionKey),
+      }),
+    });
+
+    if (!response.ok || !response.body) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `Server error ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffered = "";
+    let answer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffered += decoder.decode(value, { stream: true });
+      const lines = buffered.split("\n");
+      buffered = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const event = JSON.parse(line);
+        if (event.type === "session" && event.session_id) {
+          localStorage.setItem(sessionKey, event.session_id);
+        } else if (event.type === "status") {
+          statusEl.textContent = event.message || "Working...";
+          if (!answer) {
+            updateMessage(botMessage, `<span class="typing">${escapeHtml(event.message || "Working")}</span>`, { html: true });
+          }
+        } else if (event.type === "token") {
+          answer += event.text || "";
+          updateMessage(botMessage, answer || " ");
+          statusEl.textContent = "Answering...";
+        } else if (event.type === "replace") {
+          answer = event.text || "";
+          updateMessage(botMessage, answer || "No answer returned.");
+        } else if (event.type === "done") {
+          if (event.session_id) {
+            localStorage.setItem(sessionKey, event.session_id);
+          }
+          answer = event.answer || answer;
+          updateMessage(botMessage, answer || "No answer returned.");
+          statusEl.textContent = "Answer delivered";
+        } else if (event.type === "error") {
+          throw new Error(event.message || "Streaming failed");
+        }
+      }
+    }
+
+    if (!answer) {
+      throw new Error("No answer returned.");
+    }
+  }
+
+  async function sendJsonMessage(text, botMessage) {
+    const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
           session_id: localStorage.getItem(sessionKey),
         }),
-      });
+    });
 
-      loadingMessage.remove();
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.detail || `Server error ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.session_id) {
-        localStorage.setItem(sessionKey, data.session_id);
-      }
-      appendMessage("bot", data.answer || "No answer returned.");
-      statusEl.textContent = "Answer delivered";
-    } catch (error) {
-      if (loadingMessage.isConnected) {
-        loadingMessage.remove();
-      }
-      appendMessage("bot", `Error: ${error.message}`);
-      statusEl.textContent = "Connection issue";
-    } finally {
-      setLoading(false);
-      inputEl.focus();
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || `Server error ${response.status}`);
     }
+
+    const data = await response.json();
+    if (data.session_id) {
+      localStorage.setItem(sessionKey, data.session_id);
+    }
+    updateMessage(botMessage, data.answer || "No answer returned.");
+    statusEl.textContent = "Answer delivered";
   }
 
   function escapeHtml(value) {

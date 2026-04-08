@@ -42,6 +42,7 @@ class IngestResponse(BaseModel):
     """Response body for POST /ingest."""
     status: str = "ok"
     documents_ingested: int = 0
+    mode: str = "incremental"
     message: str = ""
 
 

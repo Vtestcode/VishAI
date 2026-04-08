@@ -8,8 +8,9 @@ and calls OpenAI to generate a grounded answer.
 from __future__ import annotations
 
 import logging
+import json
 import re
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 
 from langchain_core.documents import Document
 from openai import OpenAI
@@ -102,9 +103,118 @@ def generate_answer(
     )
 
     answer = (response.choices[0].message.content or "").strip()
+    answer = validate_answer(question, answer, chunks, settings)
     answer = _apply_contact_fallback(answer, settings)
     logger.info("LLM generated %d-char answer for: %.80s...", len(answer), question)
     return answer
+
+
+def stream_answer(
+    question: str,
+    chunks: List[Tuple[Document, float]],
+    settings: Settings | None = None,
+) -> Iterable[str]:
+    """Stream an answer token by token without applying final validation."""
+    if settings is None:
+        settings = get_settings()
+
+    if not settings.openai_api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY is not set. Add it to your .env file or environment."
+        )
+
+    context_str = _format_context(chunks)
+    client = OpenAI(api_key=settings.openai_api_key)
+
+    stream = client.chat.completions.create(
+        model=settings.model_name,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": USER_PROMPT_TEMPLATE.format(
+                    context=context_str,
+                    question=question,
+                ),
+            },
+        ],
+        temperature=0.2,
+        max_tokens=1024,
+        stream=True,
+    )
+
+    for event in stream:
+        token = event.choices[0].delta.content
+        if token:
+            yield token
+
+
+def validate_answer(
+    question: str,
+    answer: str,
+    chunks: List[Tuple[Document, float]],
+    settings: Settings,
+) -> str:
+    """Check that the answer is grounded and actually answers the user."""
+    if not settings.enable_answer_validation or INSUFFICIENT_INFO_PHRASE in answer:
+        return answer
+
+    context_str = _format_context(chunks)
+    client = OpenAI(api_key=settings.openai_api_key)
+
+    try:
+        response = client.chat.completions.create(
+            model=settings.model_name,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a strict RAG answer validator. Decide whether the answer "
+                        "is grounded in the context and answers the user's question. Return "
+                        "only JSON with keys: grounded, answers_question, corrected_answer. "
+                        "If the answer is not grounded or does not answer the question, put "
+                        f"this exact fallback in corrected_answer: {INSUFFICIENT_INFO_PHRASE}"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "context": context_str[:12000],
+                            "question": question,
+                            "answer": answer,
+                        },
+                        ensure_ascii=True,
+                    ),
+                },
+            ],
+            temperature=0,
+            max_tokens=500,
+        )
+        payload = json.loads(response.choices[0].message.content or "{}")
+    except Exception as exc:
+        logger.info("Answer validation failed; using original answer: %s", exc)
+        return answer
+
+    grounded = bool(payload.get("grounded"))
+    answers_question = bool(payload.get("answers_question"))
+    corrected = str(payload.get("corrected_answer", "")).strip()
+
+    if grounded and answers_question:
+        return corrected or answer
+
+    return corrected or INSUFFICIENT_INFO_PHRASE
+
+
+def finalize_streamed_answer(
+    question: str,
+    answer: str,
+    chunks: List[Tuple[Document, float]],
+    settings: Settings,
+) -> str:
+    """Apply the same validation and contact fallback used by non-streaming chat."""
+    answer = validate_answer(question, answer, chunks, settings)
+    return _apply_contact_fallback(answer, settings)
 
 
 def generate_small_talk_answer(
@@ -142,6 +252,45 @@ def generate_small_talk_answer(
     answer = (response.choices[0].message.content or "").strip()
     logger.info("LLM generated small-talk answer for: %.80s...", question)
     return answer
+
+
+def stream_small_talk_answer(
+    question: str,
+    settings: Settings | None = None,
+) -> Iterable[str]:
+    """Stream a small-talk response token by token."""
+    if settings is None:
+        settings = get_settings()
+
+    if not settings.openai_api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY is not set. Add it to your .env file or environment."
+        )
+
+    client = OpenAI(api_key=settings.openai_api_key)
+    stream = client.chat.completions.create(
+        model=settings.model_name,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a friendly portfolio assistant. "
+                    "Reply naturally and briefly to greetings or simple pleasantries. "
+                    "Invite the user to ask about Vishal when appropriate. "
+                    "Do not mention documents or sources unless the user asks."
+                ),
+            },
+            {"role": "user", "content": question},
+        ],
+        temperature=0.4,
+        max_tokens=80,
+        stream=True,
+    )
+
+    for event in stream:
+        token = event.choices[0].delta.content
+        if token:
+            yield token
 
 
 def _apply_contact_fallback(answer: str, settings: Settings) -> str:

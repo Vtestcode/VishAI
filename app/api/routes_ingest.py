@@ -1,10 +1,10 @@
 """
 Document ingestion endpoint.
 
-Re-ingests every supported file in S3 and rebuilds Pinecone from scratch.
+Indexes supported S3 files into Pinecone, either incrementally or by rebuild.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.config import Settings, get_settings
 from app.models.schemas import IngestResponse
@@ -15,15 +15,21 @@ router = APIRouter(tags=["ingest"])
 
 @router.post("/ingest", response_model=IngestResponse)
 async def ingest_documents(
+    rebuild: bool = Query(
+        default=False,
+        description="Delete and rebuild the entire Pinecone namespace instead of indexing only S3 changes.",
+    ),
     settings: Settings = Depends(get_settings),
 ) -> IngestResponse:
-    """Rebuild Pinecone from all supported files in the configured S3 bucket."""
+    """Index supported files from the configured S3 bucket into Pinecone."""
     try:
-        count = run_ingest(settings)
+        count = run_ingest(settings, rebuild=rebuild)
+        mode = "rebuild" if rebuild else "incremental"
         return IngestResponse(
             status="ok",
             documents_ingested=count,
-            message=f"Successfully ingested {count} chunk(s).",
+            mode=mode,
+            message=f"Successfully completed {mode} ingest with {count} chunk(s) added.",
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
