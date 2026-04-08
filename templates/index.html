@@ -49,6 +49,27 @@
           data-stream-endpoint="/chat/stream"
           data-session-key="vishal_portfolio_chat_session"
         >
+          <div class="chat-skeleton" data-skeleton aria-hidden="true">
+            <div class="skeleton-topbar">
+              <div class="skeleton-avatar skeleton-shimmer"></div>
+              <div class="skeleton-stack">
+                <div class="skeleton-line skeleton-title skeleton-shimmer"></div>
+                <div class="skeleton-line skeleton-short skeleton-shimmer"></div>
+              </div>
+            </div>
+            <div class="skeleton-chips">
+              <div class="skeleton-chip skeleton-shimmer"></div>
+              <div class="skeleton-chip skeleton-shimmer"></div>
+              <div class="skeleton-chip skeleton-shimmer"></div>
+            </div>
+            <div class="skeleton-messages">
+              <div class="skeleton-bubble skeleton-wide skeleton-shimmer"></div>
+              <div class="skeleton-bubble skeleton-reply skeleton-shimmer"></div>
+              <div class="skeleton-bubble skeleton-wide skeleton-shimmer"></div>
+            </div>
+            <div class="skeleton-composer skeleton-shimmer"></div>
+          </div>
+
           <div class="chat-topbar">
             <div class="mini-brand">
               <img class="mini-brand-mark" src="{{ request.url_for('static', path='vishai-logo.svg') }}" alt="" aria-hidden="true" />
@@ -97,6 +118,6 @@
     </div>
   </main>
 
-  <script src="{{ request.url_for('static', path='chat.js') }}?v=20260407-stream"></script>
+  <script src="{{ request.url_for('static', path='chat.js') }}?v=20260408-skeleton"></script>
 </body>
 </html>

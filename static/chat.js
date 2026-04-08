@@ -200,4 +200,5 @@
   root.querySelector("[data-send]").addEventListener("click", sendMessage);
   autoResize();
   updateMeta();
+  root.classList.add("is-ready");
 })();
