@@ -9,7 +9,6 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, and 
 - Vector search runs on Pinecone.
 - Recruiters access the deployed web app and ask questions through the site.
 
-This project is intentionally configured for hosted use. It does not rely on local document storage or a local vector database.
 
 ## Features
 
@@ -43,7 +42,7 @@ This project is intentionally configured for hosted use. It does not rely on loc
 ## Deployment Flow
 
 1. Upload portfolio documents to S3.
-2. Set the environment variables in Heroku.
+2. Set the environment variables.
 3. Deploy the app.
 4. Call `POST /ingest` once to rebuild Pinecone from S3.
 5. Share the deployed URL with recruiters.
