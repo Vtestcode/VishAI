@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VishAI</title>
-  <link rel="stylesheet" href="{{ request.url_for('static', path='styles.css') }}?v=20260407-stream" />
+  <link rel="icon" href="{{ request.url_for('static', path='vishai-logo.svg') }}" type="image/svg+xml" />
+  <link rel="stylesheet" href="{{ request.url_for('static', path='styles.css') }}?v=20260407-namecase" />
 </head>
 <body>
   <main class="page-shell">
@@ -16,7 +17,7 @@
       <section class="hero-chat-grid">
         <article class="story-panel glass-panel">
           <div class="brand-lockup">
-            <div class="brand-mark" aria-hidden="true">VA</div>
+            <img class="brand-mark" src="{{ request.url_for('static', path='vishai-logo.svg') }}" alt="" aria-hidden="true" />
             <div>
               <div class="eyebrow">VishAI</div>
               <div class="brand-subtitle">A smarter way to get to know Vishal</div>
@@ -50,7 +51,7 @@
         >
           <div class="chat-topbar">
             <div class="mini-brand">
-              <span class="mini-brand-mark">VA</span>
+              <img class="mini-brand-mark" src="{{ request.url_for('static', path='vishai-logo.svg') }}" alt="" aria-hidden="true" />
               <div>
                 <h1>VishAI</h1>
                 <p>Start chatting right away, or use one of the quick prompts to learn more.</p>

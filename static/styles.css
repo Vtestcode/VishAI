@@ -157,27 +157,22 @@ body {
 
 .brand-mark,
 .mini-brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: linear-gradient(135deg, #0f82be, #17b8c4 56%, #21d4a8);
+  display: block;
+  object-fit: contain;
   box-shadow: 0 14px 30px rgba(19, 149, 211, 0.28);
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  flex: 0 0 auto;
 }
 
 .brand-mark {
   width: 64px;
   height: 64px;
-  border-radius: 20px;
+  border-radius: 18px;
 }
 
 .mini-brand-mark {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  font-size: 0.88rem;
+  border-radius: 13px;
 }
 
 .eyebrow {
@@ -429,6 +424,8 @@ body {
 .message.bot::before {
   content: "VishAI";
   color: var(--sky);
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 
 .message p {
