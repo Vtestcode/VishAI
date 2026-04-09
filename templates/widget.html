@@ -56,15 +56,8 @@
       <button class="prompt-chip" type="button" data-prompt="What kind of engineer is Vishal?">Profile</button>
       <button class="prompt-chip" type="button" data-prompt="Which project should I look at first?">Best project</button>
       <button class="prompt-chip" type="button" data-prompt="What should I know about Vishal?">About</button>
+      <button class="prompt-chip tool-toggle" type="button" data-tool-toggle hidden>MCP tools</button>
     </div>
-
-    <section class="tool-panel" data-tool-panel hidden>
-      <div class="tool-panel-head">
-        <strong>Connected tools</strong>
-        <span data-tool-server></span>
-      </div>
-      <div class="tool-chip-list" data-tool-list></div>
-    </section>
 
     <div class="chat-messages" data-messages>
       <div class="message bot">
@@ -86,6 +79,21 @@
           <button class="send-button" type="button" data-send>Send message</button>
         </div>
       </div>
+    </div>
+
+    <div class="tool-modal" data-tool-modal hidden>
+      <div class="tool-modal-backdrop" data-tool-close></div>
+      <section class="tool-modal-card" aria-label="MCP tools">
+        <div class="tool-modal-head">
+          <div>
+            <div class="tool-modal-eyebrow">Connected MCP</div>
+            <h2>MCP tools available in this chat</h2>
+            <p data-tool-server></p>
+          </div>
+          <button class="tool-modal-close" type="button" data-tool-close aria-label="Close MCP tools">Close</button>
+        </div>
+        <div class="tool-explainer-list" data-tool-list></div>
+      </section>
     </div>
   </div>
 

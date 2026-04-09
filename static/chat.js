@@ -7,9 +7,11 @@
   const sendBtn = root.querySelector("[data-send]");
   const statusEl = root.querySelector("[data-status]");
   const charCountEl = root.querySelector("[data-char-count]");
-  const toolPanelEl = root.querySelector("[data-tool-panel]");
+  const toolToggleEl = root.querySelector("[data-tool-toggle]");
+  const toolModalEl = root.querySelector("[data-tool-modal]");
   const toolListEl = root.querySelector("[data-tool-list]");
-  const toolServerEl = root.querySelector("[data-tool-server]");
+  const toolServerEls = root.querySelectorAll("[data-tool-server]");
+  const toolCloseEls = root.querySelectorAll("[data-tool-close]");
   const prompts = root.querySelectorAll("[data-prompt]");
   const endpoint = root.dataset.endpoint || "/chat";
   const streamEndpoint = root.dataset.streamEndpoint || "/chat/stream";
@@ -35,6 +37,24 @@
       autoResize();
       updateMeta();
       inputEl.focus();
+    });
+  });
+
+  if (toolToggleEl) {
+    toolToggleEl.addEventListener("click", () => {
+      if (toolModalEl) {
+        toolModalEl.hidden = false;
+        document.body.classList.add("tool-modal-open");
+      }
+    });
+  }
+
+  toolCloseEls.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (toolModalEl) {
+        toolModalEl.hidden = true;
+        document.body.classList.remove("tool-modal-open");
+      }
     });
   });
 
@@ -85,24 +105,37 @@
 
   function renderAvailableTools(tools, serverLabel) {
     availableTools = Array.isArray(tools) ? tools : [];
-    if (!toolPanelEl || !toolListEl || !availableTools.length) {
-      if (toolPanelEl) toolPanelEl.hidden = true;
+    if (!toolListEl || !availableTools.length) {
+      if (toolToggleEl) toolToggleEl.hidden = true;
+      if (toolModalEl) toolModalEl.hidden = true;
+      document.body.classList.remove("tool-modal-open");
       return;
     }
 
-    toolPanelEl.hidden = false;
-    if (toolServerEl) {
-      toolServerEl.textContent = serverLabel ? `via ${serverLabel}` : "";
-    }
+    if (toolToggleEl) toolToggleEl.hidden = false;
+    toolServerEls.forEach((element) => {
+      element.textContent = serverLabel
+        ? `Connected through ${serverLabel}. Click a tool to see what it does.`
+        : "Connected MCP tools are available in this chat.";
+    });
 
     toolListEl.innerHTML = availableTools
-      .map((tool) => {
+      .map((tool, index) => {
         const description = escapeHtml(tool.description || "No description provided.");
+        const inputSchema = tool.input_schema && tool.input_schema.properties
+          ? Object.keys(tool.input_schema.properties).join(", ")
+          : "";
         return `
-          <div class="tool-chip" title="${description}">
-            <span class="tool-chip-name">${escapeHtml(tool.name || "tool")}</span>
-            <span class="tool-chip-description">${description}</span>
-          </div>
+          <details class="tool-explainer" ${index === 0 ? "open" : ""}>
+            <summary class="tool-explainer-summary">
+              <span class="tool-explainer-name">${escapeHtml(tool.name || "tool")}</span>
+              <span class="tool-explainer-hint">Click to expand</span>
+            </summary>
+            <div class="tool-explainer-body">
+              <p>${description}</p>
+              ${inputSchema ? `<p><strong>Expected inputs:</strong> ${escapeHtml(inputSchema)}</p>` : ""}
+            </div>
+          </details>
         `;
       })
       .join("");
@@ -138,7 +171,7 @@
   }
 
   async function loadAvailableTools() {
-    if (!toolsEndpoint || !toolPanelEl) return;
+    if (!toolsEndpoint || !toolToggleEl) return;
 
     try {
       const response = await fetch(toolsEndpoint);
@@ -148,7 +181,7 @@
         renderAvailableTools(data.tools, data.server_label || "");
       }
     } catch (_error) {
-      toolPanelEl.hidden = true;
+      if (toolToggleEl) toolToggleEl.hidden = true;
     }
   }
 
