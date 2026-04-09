@@ -21,6 +21,53 @@ DEFAULT_ROUTABLE_TOOLS = {
     "search_github_code",
 }
 
+STRICT_ROUTE_PATTERNS: dict[str, tuple[str, ...]] = {
+    "get_current_datetime": (
+        "what time is it",
+        "current time",
+        "what is the date",
+        "current date",
+        "date today",
+        "right now",
+        "current datetime",
+    ),
+    "web_search": (
+        "search the web",
+        "web search",
+        "look up online",
+        "find online",
+        "latest news",
+        "latest update",
+        "latest release",
+        "recent news",
+    ),
+    "explore_public_repo_readmes": (
+        "readme",
+        "repo readme",
+        "repo readmes",
+        "repository readme",
+        "repository readmes",
+        "public repo readmes",
+        "public repositories",
+    ),
+    "search_github_code": (
+        "github code",
+        "search github code",
+        "search github for code",
+        "code in github",
+        "github implementation",
+        "github example",
+    ),
+    "search_knowledge_base": (
+        "search the knowledge base",
+        "search your knowledge base",
+        "what does the knowledge base say",
+        "search the docs",
+        "based on the docs",
+        "portfolio documents",
+    ),
+}
+
 
 def mcp_enabled(settings: Settings) -> bool:
     """Return True when the app should expose a remote MCP server."""
@@ -69,21 +116,22 @@ def route_query_to_tool(question: str, settings: Settings) -> str | None:
     def available(name: str) -> bool:
         return name in allowed_tools
 
-    if available("get_current_datetime") and re.search(
-        r"\b(time|date|datetime|today|current time|current date|right now)\b",
-        text,
+    if available("get_current_datetime") and (
+        any(phrase in text for phrase in STRICT_ROUTE_PATTERNS["get_current_datetime"])
+        or re.search(r"\b(what time|current time|today's date|date today|right now)\b", text)
     ):
         return "get_current_datetime"
 
     if available("explore_public_repo_readmes") and (
-        "readme" in text or (
+        any(phrase in text for phrase in STRICT_ROUTE_PATTERNS["explore_public_repo_readmes"])
+        or (
             "github" in text and any(term in text for term in ("repos", "repositories", "repo summaries", "repo readmes"))
         )
     ):
         return "explore_public_repo_readmes"
 
     if available("search_github_code") and (
-        "github code" in text
+        any(phrase in text for phrase in STRICT_ROUTE_PATTERNS["search_github_code"])
         or "search github" in text
         or ("github" in text and "code" in text)
         or ("repo" in text and "code" in text)
@@ -92,22 +140,37 @@ def route_query_to_tool(question: str, settings: Settings) -> str | None:
         return "search_github_code"
 
     if available("web_search") and (
-        "search the web" in text
-        or "web search" in text
-        or any(term in text for term in ("latest", "news", "recent", "current events", "online"))
+        any(phrase in text for phrase in STRICT_ROUTE_PATTERNS["web_search"])
+        or (
+            any(term in text for term in ("latest", "news", "recent", "online"))
+            and not any(term in text for term in ("vishal", "portfolio", "resume", "experience", "project"))
+        )
     ):
         return "web_search"
 
     if available("search_knowledge_base") and (
-        "knowledge base" in text
-        or "portfolio documents" in text
-        or "documents say" in text
-        or "search your knowledge" in text
-        or "based on the docs" in text
+        any(phrase in text for phrase in STRICT_ROUTE_PATTERNS["search_knowledge_base"])
+        or (
+            any(term in text for term in ("vishal", "portfolio", "resume"))
+            and any(term in text for term in ("docs", "documents", "knowledge base"))
+        )
     ):
         return "search_knowledge_base"
 
     return None
+
+
+def should_skip_retrieval(question: str, settings: Settings) -> tuple[bool, str | None]:
+    """Return True when a question should bypass RAG retrieval and use a tool directly."""
+    routed_tool = route_query_to_tool(question, settings)
+    if routed_tool in {
+        "get_current_datetime",
+        "web_search",
+        "explore_public_repo_readmes",
+        "search_github_code",
+    }:
+        return True, routed_tool
+    return False, routed_tool
 
 
 def fetch_available_tools(settings: Settings) -> list[ToolDefinition]:

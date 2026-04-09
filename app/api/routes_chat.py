@@ -22,11 +22,12 @@ from app.rag.llm import (
     finalize_streamed_answer,
     generate_answer,
     generate_small_talk_answer,
+    generate_tool_only_answer,
     is_small_talk,
     stream_answer,
     stream_small_talk_answer,
 )
-from app.rag.mcp import fetch_available_tools, mcp_enabled
+from app.rag.mcp import fetch_available_tools, mcp_enabled, should_skip_retrieval
 from app.rag.retriever import retrieve_relevant_chunks
 
 router = APIRouter(tags=["chat"])
@@ -54,19 +55,27 @@ async def chat(
             tool_calls = []
             routed_tool = None
         else:
-            chunks = retrieve_relevant_chunks(body.message, settings=settings)
-            answer, available_tools, tool_calls, routed_tool = generate_answer(
-                body.message,
-                chunks,
-                settings=settings,
-            )
-            sources = [
-                SourceSnippet(
-                    text=doc.page_content[:500],
-                    metadata=doc.metadata,
+            skip_retrieval, routed_tool = should_skip_retrieval(body.message, settings)
+            if skip_retrieval and routed_tool:
+                answer, available_tools, tool_calls, routed_tool = generate_tool_only_answer(
+                    body.message,
+                    settings=settings,
                 )
-                for doc, _score in chunks
-            ]
+                sources = []
+            else:
+                chunks = retrieve_relevant_chunks(body.message, settings=settings)
+                answer, available_tools, tool_calls, routed_tool = generate_answer(
+                    body.message,
+                    chunks,
+                    settings=settings,
+                )
+                sources = [
+                    SourceSnippet(
+                        text=doc.page_content[:500],
+                        metadata=doc.metadata,
+                    )
+                    for doc, _score in chunks
+                ]
 
         _append_chat_message(settings, session_id, "user", body.message)
         _append_chat_message(settings, session_id, "assistant", answer)
@@ -125,28 +134,18 @@ async def chat_stream(
                         yield _json_event("token", {"text": token})
                     answer = "".join(answer_parts).strip()
             else:
-                yield _json_event("status", {"message": "Searching the knowledge base..."})
-                chunks = retrieve_relevant_chunks(body.message, settings=settings)
-                sources = [
-                    {
-                        "text": doc.page_content[:500],
-                        "metadata": doc.metadata,
-                    }
-                    for doc, _score in chunks
-                ]
-                yield _json_event("sources", {"sources": sources})
-                if mcp_enabled(settings):
-                    yield _json_event("status", {"message": "Loading connected tools..."})
-                    answer, available_tools, tool_calls, routed_tool = generate_answer(
-                        body.message,
-                        chunks,
-                        settings=settings,
-                    )
+                skip_retrieval, routed_tool = should_skip_retrieval(body.message, settings)
+                if skip_retrieval and routed_tool and mcp_enabled(settings):
                     if routed_tool:
                         yield _json_event(
                             "status",
                             {"message": f"Routing question to {routed_tool}..."},
                         )
+                    answer, available_tools, tool_calls, routed_tool = generate_tool_only_answer(
+                        body.message,
+                        settings=settings,
+                        routed_tool=routed_tool,
+                    )
                     yield _json_event(
                         "tools",
                         {
@@ -161,16 +160,52 @@ async def chat_stream(
                     )
                     yield _json_event("replace", {"text": answer})
                 else:
-                    yield _json_event("status", {"message": "Writing the answer..."})
-                    for token in stream_answer(body.message, chunks, settings=settings):
-                        answer_parts.append(token)
-                        yield _json_event("token", {"text": token})
-
-                    streamed_answer = "".join(answer_parts).strip()
-                    yield _json_event("status", {"message": "Checking the answer..."})
-                    answer = finalize_streamed_answer(body.message, streamed_answer, chunks, settings)
-                    if answer != streamed_answer:
+                    yield _json_event("status", {"message": "Searching the knowledge base..."})
+                    chunks = retrieve_relevant_chunks(body.message, settings=settings)
+                    sources = [
+                        {
+                            "text": doc.page_content[:500],
+                            "metadata": doc.metadata,
+                        }
+                        for doc, _score in chunks
+                    ]
+                    yield _json_event("sources", {"sources": sources})
+                    if mcp_enabled(settings):
+                        yield _json_event("status", {"message": "Loading connected tools..."})
+                        answer, available_tools, tool_calls, routed_tool = generate_answer(
+                            body.message,
+                            chunks,
+                            settings=settings,
+                        )
+                        if routed_tool:
+                            yield _json_event(
+                                "status",
+                                {"message": f"Routing question to {routed_tool}..."},
+                            )
+                        yield _json_event(
+                            "tools",
+                            {
+                                "server_label": settings.mcp_server_label,
+                                "available_tools": [
+                                    tool.model_dump() for tool in available_tools
+                                ],
+                                "tool_calls": [
+                                    tool_call.model_dump() for tool_call in tool_calls
+                                ],
+                            },
+                        )
                         yield _json_event("replace", {"text": answer})
+                    else:
+                        yield _json_event("status", {"message": "Writing the answer..."})
+                        for token in stream_answer(body.message, chunks, settings=settings):
+                            answer_parts.append(token)
+                            yield _json_event("token", {"text": token})
+
+                        streamed_answer = "".join(answer_parts).strip()
+                        yield _json_event("status", {"message": "Checking the answer..."})
+                        answer = finalize_streamed_answer(body.message, streamed_answer, chunks, settings)
+                        if answer != streamed_answer:
+                            yield _json_event("replace", {"text": answer})
 
             _append_chat_message(settings, session_id, "user", body.message)
             _append_chat_message(settings, session_id, "assistant", answer)

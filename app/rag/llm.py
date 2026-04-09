@@ -132,6 +132,36 @@ def generate_answer(
     return answer, [], [], None
 
 
+def generate_tool_only_answer(
+    question: str,
+    settings: Settings,
+    routed_tool: str,
+) -> tuple[str, list[ToolDefinition], list[ToolCall], str | None]:
+    """Answer with MCP directly when the query should bypass RAG retrieval."""
+    if not mcp_enabled(settings):
+        raise RuntimeError("MCP is not enabled.")
+
+    answer, available_tools, tool_calls = answer_with_mcp(
+        system_prompt=(
+            "You are a recruiter-facing assistant with access to external tools. "
+            "Use the routed tool when it is relevant to answer the question directly and concisely."
+        ),
+        user_prompt=question,
+        settings=settings,
+        preferred_tool=routed_tool,
+    )
+    if not answer:
+        answer = "I couldn't complete that tool request."
+
+    logger.info(
+        "LLM generated %d-char tool-only answer via %s for: %.80s...",
+        len(answer),
+        routed_tool,
+        question,
+    )
+    return answer, available_tools, tool_calls, routed_tool
+
+
 def stream_answer(
     question: str,
     chunks: List[Tuple[Document, float]],
