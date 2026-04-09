@@ -25,11 +25,12 @@
 }
 
 html, body {
-  min-height: 100%;
+  height: 100%;
   margin: 0;
 }
 
 body {
+  overflow: hidden;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--ink);
   background:
@@ -41,7 +42,7 @@ body {
 
 .page-shell {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -99,8 +100,9 @@ body {
   z-index: 1;
   width: min(1320px, calc(100% - 32px));
   margin: 0 auto;
-  min-height: 100vh;
-  padding: 22px 0 48px;
+  height: 100vh;
+  padding: 22px 0;
+  overflow: hidden;
 }
 
 .site-hero {
@@ -112,7 +114,8 @@ body {
   grid-template-columns: minmax(280px, 0.72fr) minmax(520px, 1.28fr);
   gap: 20px;
   align-items: stretch;
-  min-height: min(920px, calc(100vh - 44px));
+  height: calc(100vh - 44px);
+  min-height: 0;
 }
 
 .glass-panel {
@@ -131,6 +134,7 @@ body {
   flex-direction: column;
   justify-content: space-between;
   gap: 24px;
+  min-height: 0;
 }
 
 .story-panel::before {
@@ -297,7 +301,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  min-height: 760px;
+  height: 100%;
   box-shadow: 0 36px 90px rgba(46, 133, 158, 0.18);
 }
 
@@ -973,14 +977,22 @@ body {
 }
 
 @media (max-width: 980px) {
+  body {
+    overflow: auto;
+  }
+
+  .page-shell,
   .app-frame {
+    height: auto;
     width: min(100%, calc(100% - 20px));
     padding-top: 10px;
     min-height: auto;
+    overflow: visible;
   }
 
   .hero-chat-grid {
     grid-template-columns: 1fr;
+    height: auto;
     min-height: auto;
   }
 
