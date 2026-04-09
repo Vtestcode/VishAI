@@ -10,6 +10,7 @@ from typing import Any
 
 from openai import OpenAI
 
+from app.core.cache import build_cache_key, cache_get_json, cache_set_json
 from app.core.config import Settings
 from app.models.schemas import ToolCall, ToolDefinition
 
@@ -175,6 +176,14 @@ def should_skip_retrieval(question: str, settings: Settings) -> tuple[bool, str 
 
 def fetch_available_tools(settings: Settings) -> list[ToolDefinition]:
     """Ask OpenAI to discover the remote MCP server tools and return them."""
+    cache_key = build_cache_key(
+        "mcp-tools",
+        f"{settings.mcp_server_label}|{settings.mcp_server_url}|{settings.mcp_allowed_tools}",
+    )
+    cached = cache_get_json(cache_key)
+    if isinstance(cached, list):
+        return [ToolDefinition(**item) for item in cached]
+
     tool = build_mcp_tool_config(settings)
     if tool is None:
         return []
@@ -187,7 +196,13 @@ def fetch_available_tools(settings: Settings) -> list[ToolDefinition]:
         max_output_tokens=120,
     )
     payload = _response_to_dict(response)
-    return _extract_available_tools(payload)
+    tools = _extract_available_tools(payload)
+    cache_set_json(
+        cache_key,
+        [tool_item.model_dump() for tool_item in tools],
+        settings.redis_cache_ttl_seconds,
+    )
+    return tools
 
 
 def answer_with_mcp(

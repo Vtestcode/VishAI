@@ -39,6 +39,10 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pine
 | `MCP_SERVER_DESCRIPTION` | No | Optional MCP server description passed to OpenAI |
 | `MCP_REQUIRE_APPROVAL` | No | MCP approval policy passed to OpenAI, default `never` |
 | `MCP_ALLOWED_TOOLS` | No | Optional comma-separated allowlist of MCP tool names |
+| `REDIS_URL` | No | Redis connection URL, used when available for caching |
+| `REDISCLOUD_URL` | No | Fallback Redis connection URL for Redis Cloud / older add-ons |
+| `REDIS_CACHE_TTL_SECONDS` | No | Cache TTL for MCP tool discovery, default `300` |
+| `TOOL_ANSWER_CACHE_TTL_SECONDS` | No | Cache TTL for direct tool-routed answers, default `180` |
 | `TOP_K` | No | Number of retrieved chunks |
 | `RETRIEVAL_CANDIDATE_K` | No | Number of candidates retrieved before reranking, default `15` |
 | `QUERY_REWRITE_COUNT` | No | Number of translated retrieval queries, default `3` |
@@ -92,6 +96,14 @@ Invoke-RestMethod -Method Get -Uri "https://your-app.herokuapp.com/tools"
 Notes:
 - Most remote MCP servers expose an SSE endpoint such as `/sse`, not just the site root.
 - The chatbot keeps using RAG for document context; MCP tools are added as optional extra capabilities on top.
+
+## Redis Caching
+
+If you have Heroku Redis or Redis Cloud attached, set either `REDIS_URL` or `REDISCLOUD_URL`.
+
+The app currently uses Redis to cache:
+- MCP tool discovery results
+- direct tool-only answers for routed queries such as web search, time, GitHub code search, and README exploration
 
 ## Ingestion
 

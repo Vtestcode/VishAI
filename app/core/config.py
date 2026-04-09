@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     mcp_server_description: str = os.getenv("MCP_SERVER_DESCRIPTION", "")
     mcp_require_approval: str = os.getenv("MCP_REQUIRE_APPROVAL", "never")
     mcp_allowed_tools: str = os.getenv("MCP_ALLOWED_TOOLS", "")
+    redis_url: str = os.getenv("REDIS_URL", os.getenv("REDISCLOUD_URL", ""))
+    redis_cache_ttl_seconds: int = int(os.getenv("REDIS_CACHE_TTL_SECONDS", "300"))
+    tool_answer_cache_ttl_seconds: int = int(os.getenv("TOOL_ANSWER_CACHE_TTL_SECONDS", "180"))
 
     # --- RAG tuning ---
     chunk_size: int = 1000

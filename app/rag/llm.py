@@ -15,6 +15,7 @@ from typing import Iterable, List, Tuple
 from langchain_core.documents import Document
 from openai import OpenAI
 
+from app.core.cache import build_cache_key, cache_get_json, cache_set_json
 from app.core.config import Settings, get_settings
 from app.models.schemas import ToolCall, ToolDefinition
 from app.rag.mcp import answer_with_mcp, mcp_enabled, route_query_to_tool
@@ -141,6 +142,16 @@ def generate_tool_only_answer(
     if not mcp_enabled(settings):
         raise RuntimeError("MCP is not enabled.")
 
+    cache_key = build_cache_key("tool-answer", f"{routed_tool}|{question}")
+    cached = cache_get_json(cache_key)
+    if isinstance(cached, dict):
+        return (
+            str(cached.get("answer", "")),
+            [ToolDefinition(**item) for item in cached.get("available_tools", [])],
+            [ToolCall(**item) for item in cached.get("tool_calls", [])],
+            str(cached.get("routed_tool") or routed_tool),
+        )
+
     answer, available_tools, tool_calls = answer_with_mcp(
         system_prompt=(
             "You are a recruiter-facing assistant with access to external tools. "
@@ -158,6 +169,16 @@ def generate_tool_only_answer(
         len(answer),
         routed_tool,
         question,
+    )
+    cache_set_json(
+        cache_key,
+        {
+            "answer": answer,
+            "available_tools": [tool.model_dump() for tool in available_tools],
+            "tool_calls": [tool_call.model_dump() for tool_call in tool_calls],
+            "routed_tool": routed_tool,
+        },
+        settings.tool_answer_cache_ttl_seconds,
     )
     return answer, available_tools, tool_calls, routed_tool
 
