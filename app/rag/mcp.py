@@ -5,6 +5,7 @@ Helpers for optional remote MCP integration through the OpenAI Responses API.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from openai import OpenAI
@@ -12,13 +13,24 @@ from openai import OpenAI
 from app.core.config import Settings
 from app.models.schemas import ToolCall, ToolDefinition
 
+DEFAULT_ROUTABLE_TOOLS = {
+    "search_knowledge_base",
+    "web_search",
+    "get_current_datetime",
+    "explore_public_repo_readmes",
+    "search_github_code",
+}
+
 
 def mcp_enabled(settings: Settings) -> bool:
     """Return True when the app should expose a remote MCP server."""
     return bool(settings.enable_mcp and settings.mcp_server_url and settings.openai_api_key)
 
 
-def build_mcp_tool_config(settings: Settings) -> dict[str, Any] | None:
+def build_mcp_tool_config(
+    settings: Settings,
+    allowed_tools_override: list[str] | None = None,
+) -> dict[str, Any] | None:
     """Build the OpenAI Responses API tool definition for a remote MCP server."""
     if not mcp_enabled(settings):
         return None
@@ -33,7 +45,7 @@ def build_mcp_tool_config(settings: Settings) -> dict[str, Any] | None:
     if settings.mcp_server_description:
         tool["server_description"] = settings.mcp_server_description
 
-    allowed_tools = [
+    allowed_tools = allowed_tools_override or [
         item.strip()
         for item in settings.mcp_allowed_tools.split(",")
         if item.strip()
@@ -42,6 +54,60 @@ def build_mcp_tool_config(settings: Settings) -> dict[str, Any] | None:
         tool["allowed_tools"] = allowed_tools
 
     return tool
+
+
+def route_query_to_tool(question: str, settings: Settings) -> str | None:
+    """Choose the most likely MCP tool for a user question."""
+    allowed_tools = {
+        item.strip()
+        for item in settings.mcp_allowed_tools.split(",")
+        if item.strip()
+    } or DEFAULT_ROUTABLE_TOOLS
+
+    text = question.lower().strip()
+
+    def available(name: str) -> bool:
+        return name in allowed_tools
+
+    if available("get_current_datetime") and re.search(
+        r"\b(time|date|datetime|today|current time|current date|right now)\b",
+        text,
+    ):
+        return "get_current_datetime"
+
+    if available("explore_public_repo_readmes") and (
+        "readme" in text or (
+            "github" in text and any(term in text for term in ("repos", "repositories", "repo summaries", "repo readmes"))
+        )
+    ):
+        return "explore_public_repo_readmes"
+
+    if available("search_github_code") and (
+        "github code" in text
+        or "search github" in text
+        or ("github" in text and "code" in text)
+        or ("repo" in text and "code" in text)
+        or "example implementation" in text
+    ):
+        return "search_github_code"
+
+    if available("web_search") and (
+        "search the web" in text
+        or "web search" in text
+        or any(term in text for term in ("latest", "news", "recent", "current events", "online"))
+    ):
+        return "web_search"
+
+    if available("search_knowledge_base") and (
+        "knowledge base" in text
+        or "portfolio documents" in text
+        or "documents say" in text
+        or "search your knowledge" in text
+        or "based on the docs" in text
+    ):
+        return "search_knowledge_base"
+
+    return None
 
 
 def fetch_available_tools(settings: Settings) -> list[ToolDefinition]:
@@ -66,9 +132,13 @@ def answer_with_mcp(
     system_prompt: str,
     user_prompt: str,
     settings: Settings,
+    preferred_tool: str | None = None,
 ) -> tuple[str, list[ToolDefinition], list[ToolCall]]:
     """Generate an answer with optional remote MCP access."""
-    tool = build_mcp_tool_config(settings)
+    tool = build_mcp_tool_config(
+        settings,
+        allowed_tools_override=[preferred_tool] if preferred_tool else None,
+    )
     if tool is None:
         return "", [], []
 

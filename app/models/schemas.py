@@ -49,6 +49,7 @@ class ChatResponse(BaseModel):
     session_id: Optional[str] = None
     available_tools: list[ToolDefinition] = Field(default_factory=list)
     tool_calls: list[ToolCall] = Field(default_factory=list)
+    routed_tool: Optional[str] = None
 
 
 class ToolsResponse(BaseModel):

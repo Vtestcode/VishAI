@@ -17,7 +17,7 @@ from openai import OpenAI
 
 from app.core.config import Settings, get_settings
 from app.models.schemas import ToolCall, ToolDefinition
-from app.rag.mcp import answer_with_mcp, mcp_enabled
+from app.rag.mcp import answer_with_mcp, mcp_enabled, route_query_to_tool
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def generate_answer(
     question: str,
     chunks: List[Tuple[Document, float]],
     settings: Settings | None = None,
-) -> tuple[str, list[ToolDefinition], list[ToolCall]]:
+) -> tuple[str, list[ToolDefinition], list[ToolCall], str | None]:
     """Call OpenAI with the retrieved context and return the assistant's answer."""
     if settings is None:
         settings = get_settings()
@@ -92,10 +92,12 @@ def generate_answer(
     )
 
     if mcp_enabled(settings):
+        routed_tool = route_query_to_tool(question, settings)
         answer, available_tools, tool_calls = answer_with_mcp(
             system_prompt=SYSTEM_PROMPT,
             user_prompt=user_prompt,
             settings=settings,
+            preferred_tool=routed_tool,
         )
         if not answer:
             answer = INSUFFICIENT_INFO_PHRASE
@@ -109,7 +111,7 @@ def generate_answer(
             len(answer),
             question,
         )
-        return answer, available_tools, tool_calls
+        return answer, available_tools, tool_calls, routed_tool
 
     client = OpenAI(api_key=settings.openai_api_key)
 
@@ -127,7 +129,7 @@ def generate_answer(
     answer = validate_answer(question, answer, chunks, settings)
     answer = _apply_contact_fallback(answer, settings)
     logger.info("LLM generated %d-char answer for: %.80s...", len(answer), question)
-    return answer, [], []
+    return answer, [], [], None
 
 
 def stream_answer(

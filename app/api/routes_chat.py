@@ -52,9 +52,10 @@ async def chat(
             sources = []
             available_tools = fetch_available_tools(settings) if mcp_enabled(settings) else []
             tool_calls = []
+            routed_tool = None
         else:
             chunks = retrieve_relevant_chunks(body.message, settings=settings)
-            answer, available_tools, tool_calls = generate_answer(
+            answer, available_tools, tool_calls, routed_tool = generate_answer(
                 body.message,
                 chunks,
                 settings=settings,
@@ -75,6 +76,7 @@ async def chat(
             session_id=session_id,
             available_tools=available_tools,
             tool_calls=tool_calls,
+            routed_tool=routed_tool,
         )
 
     except RuntimeError as exc:
@@ -135,11 +137,16 @@ async def chat_stream(
                 yield _json_event("sources", {"sources": sources})
                 if mcp_enabled(settings):
                     yield _json_event("status", {"message": "Loading connected tools..."})
-                    answer, available_tools, tool_calls = generate_answer(
+                    answer, available_tools, tool_calls, routed_tool = generate_answer(
                         body.message,
                         chunks,
                         settings=settings,
                     )
+                    if routed_tool:
+                        yield _json_event(
+                            "status",
+                            {"message": f"Routing question to {routed_tool}..."},
+                        )
                     yield _json_event(
                         "tools",
                         {
