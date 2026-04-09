@@ -427,6 +427,13 @@ body {
   line-height: 1.6;
 }
 
+.chat-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
 .presence {
   display: inline-flex;
   align-items: center;
@@ -458,17 +465,24 @@ body {
 }
 
 .tool-toggle {
+  align-self: flex-end;
+  border: 1px solid rgba(13, 111, 147, 0.22);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 0.92rem;
   background: linear-gradient(135deg, rgba(13, 111, 147, 0.12), rgba(24, 193, 163, 0.16));
-  border-color: rgba(13, 111, 147, 0.22);
   font-weight: 700;
+  color: var(--forest);
+  box-shadow: 0 10px 24px rgba(19, 149, 211, 0.12);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.tool-toggle::before {
-  content: "MCP";
-  margin-right: 8px;
-  color: var(--forest);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+.tool-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(13, 111, 147, 0.32);
+  box-shadow: 0 14px 28px rgba(19, 149, 211, 0.16);
 }
 
 .tool-modal {
@@ -886,6 +900,17 @@ body {
   align-items: flex-start;
 }
 
+.widget-wrapper .chat-actions {
+  align-items: stretch;
+}
+
+.widget-wrapper .tool-toggle {
+  align-self: stretch;
+  text-align: center;
+  font-size: 0.84rem;
+  padding: 9px 12px;
+}
+
 .widget-wrapper .tool-explainer-summary {
   padding: 14px;
 }
@@ -970,6 +995,15 @@ body {
   .chat-topbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .chat-actions {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .tool-toggle {
+    align-self: flex-start;
   }
 
   .chat-messages {
