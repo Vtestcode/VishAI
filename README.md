@@ -1,6 +1,6 @@
 # RAG Chatbot
 
-A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pinecone, and optional remote MCP tools.
+A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pinecone, optional remote MCP tools, and optional Redis caching.
 
 ## Architecture
 
@@ -8,6 +8,7 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pine
 - Embeddings are generated with OpenAI.
 - Vector search runs on Pinecone.
 - Optional MCP tools can be connected through the OpenAI Responses API.
+- Optional Redis caching speeds up MCP tool discovery and direct tool-routed answers.
 - Recruiters access the deployed web app and ask questions through the site.
 
 
@@ -21,6 +22,8 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pine
 - Translate queries, retrieve candidates, rerank context, and validate answers.
 - Answer recruiter-style questions.
 - Connect to a remote MCP server and let the assistant call those tools.
+- Route obvious user requests to the right MCP tool before answering.
+- Skip retrieval when a question is clearly a tool-only request like time, web search, GitHub code, or public repo README exploration.
 - Display connected tools in the chat UI and show which tools were used in a reply.
 - Redirect unanswered questions to email when configured.
 - Serve both a full-page experience at `/` and an embeddable widget at `/widget`.
@@ -70,7 +73,7 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pine
 2. Set the environment variables.
 3. Deploy the app.
 4. Call `POST /ingest` to incrementally add changed S3 files to Pinecone.
-5. Share the deployed URL with recruiters.
+5. Share the deployed URL
 
 ## Connect A Remote MCP Server
 
@@ -78,13 +81,13 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pine
 
 ```env
 ENABLE_MCP=true
-MCP_SERVER_URL=https://mcp-server-rag-219ad446fdd2.herokuapp.com/sse
+MCP_SERVER_URL=<Add MCP Server>/sse
 MCP_SERVER_LABEL=rag_tools
 MCP_REQUIRE_APPROVAL=never
 ```
 
 2. Redeploy the app.
-3. Open the chatbot UI. If the MCP server is reachable, the chat panel will show a `Connected tools` section.
+3. Open the chatbot UI. If the MCP server is reachable, the chat will expose an `MCP tools` button and the backend will be able to call the connected tools.
 4. Call `GET /tools` to verify which tools the chatbot can see.
 
 Example:
@@ -97,6 +100,19 @@ Notes:
 - Most remote MCP servers expose an SSE endpoint such as `/sse`, not just the site root.
 - The chatbot keeps using RAG for document context; MCP tools are added as optional extra capabilities on top.
 
+## MCP Routing
+
+The chatbot includes a lightweight router for obvious tool-first requests.
+
+Typical routing behavior:
+- time/date questions route to `get_current_datetime`
+- latest/news/web lookup questions route to `web_search`
+- README / public repository exploration questions route to `explore_public_repo_readmes`
+- GitHub code search questions route to `search_github_code`
+- explicit knowledge-base / docs questions route to `search_knowledge_base`
+
+For clearly tool-only requests, the app skips vector retrieval to reduce latency.
+
 ## Redis Caching
 
 If you have Heroku Redis or Redis Cloud attached, set either `REDIS_URL` or `REDISCLOUD_URL`.
@@ -104,6 +120,14 @@ If you have Heroku Redis or Redis Cloud attached, set either `REDIS_URL` or `RED
 The app currently uses Redis to cache:
 - MCP tool discovery results
 - direct tool-only answers for routed queries such as web search, time, GitHub code search, and README exploration
+
+Example:
+
+```env
+REDISCLOUD_URL=redis://default:password@host:port
+REDIS_CACHE_TTL_SECONDS=300
+TOOL_ANSWER_CACHE_TTL_SECONDS=180
+```
 
 ## Ingestion
 
