@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.core.config import Settings, get_settings
-from app.models.schemas import ChatRequest, ChatResponse, SourceSnippet
+from app.models.schemas import ChatRequest, ChatResponse, SourceSnippet, ToolsResponse
 from app.rag.llm import (
     finalize_streamed_answer,
     generate_answer,
@@ -26,6 +26,7 @@ from app.rag.llm import (
     stream_answer,
     stream_small_talk_answer,
 )
+from app.rag.mcp import fetch_available_tools, mcp_enabled
 from app.rag.retriever import retrieve_relevant_chunks
 
 router = APIRouter(tags=["chat"])
@@ -49,9 +50,15 @@ async def chat(
         if is_small_talk(body.message):
             answer = generate_small_talk_answer(body.message, settings=settings)
             sources = []
+            available_tools = fetch_available_tools(settings) if mcp_enabled(settings) else []
+            tool_calls = []
         else:
             chunks = retrieve_relevant_chunks(body.message, settings=settings)
-            answer = generate_answer(body.message, chunks, settings=settings)
+            answer, available_tools, tool_calls = generate_answer(
+                body.message,
+                chunks,
+                settings=settings,
+            )
             sources = [
                 SourceSnippet(
                     text=doc.page_content[:500],
@@ -62,7 +69,13 @@ async def chat(
 
         _append_chat_message(settings, session_id, "user", body.message)
         _append_chat_message(settings, session_id, "assistant", answer)
-        return ChatResponse(answer=answer, sources=sources, session_id=session_id)
+        return ChatResponse(
+            answer=answer,
+            sources=sources,
+            session_id=session_id,
+            available_tools=available_tools,
+            tool_calls=tool_calls,
+        )
 
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -90,10 +103,25 @@ async def chat_stream(
 
             if is_small_talk(body.message):
                 yield _json_event("status", {"message": "Composing answer..."})
-                for token in stream_small_talk_answer(body.message, settings=settings):
-                    answer_parts.append(token)
-                    yield _json_event("token", {"text": token})
-                answer = "".join(answer_parts).strip()
+                if mcp_enabled(settings):
+                    answer = generate_small_talk_answer(body.message, settings=settings)
+                    available_tools = fetch_available_tools(settings)
+                    yield _json_event(
+                        "tools",
+                        {
+                            "server_label": settings.mcp_server_label,
+                            "available_tools": [
+                                tool.model_dump() for tool in available_tools
+                            ],
+                            "tool_calls": [],
+                        },
+                    )
+                    yield _json_event("replace", {"text": answer})
+                else:
+                    for token in stream_small_talk_answer(body.message, settings=settings):
+                        answer_parts.append(token)
+                        yield _json_event("token", {"text": token})
+                    answer = "".join(answer_parts).strip()
             else:
                 yield _json_event("status", {"message": "Searching the knowledge base..."})
                 chunks = retrieve_relevant_chunks(body.message, settings=settings)
@@ -105,16 +133,37 @@ async def chat_stream(
                     for doc, _score in chunks
                 ]
                 yield _json_event("sources", {"sources": sources})
-                yield _json_event("status", {"message": "Writing the answer..."})
-                for token in stream_answer(body.message, chunks, settings=settings):
-                    answer_parts.append(token)
-                    yield _json_event("token", {"text": token})
-
-                streamed_answer = "".join(answer_parts).strip()
-                yield _json_event("status", {"message": "Checking the answer..."})
-                answer = finalize_streamed_answer(body.message, streamed_answer, chunks, settings)
-                if answer != streamed_answer:
+                if mcp_enabled(settings):
+                    yield _json_event("status", {"message": "Loading connected tools..."})
+                    answer, available_tools, tool_calls = generate_answer(
+                        body.message,
+                        chunks,
+                        settings=settings,
+                    )
+                    yield _json_event(
+                        "tools",
+                        {
+                            "server_label": settings.mcp_server_label,
+                            "available_tools": [
+                                tool.model_dump() for tool in available_tools
+                            ],
+                            "tool_calls": [
+                                tool_call.model_dump() for tool_call in tool_calls
+                            ],
+                        },
+                    )
                     yield _json_event("replace", {"text": answer})
+                else:
+                    yield _json_event("status", {"message": "Writing the answer..."})
+                    for token in stream_answer(body.message, chunks, settings=settings):
+                        answer_parts.append(token)
+                        yield _json_event("token", {"text": token})
+
+                    streamed_answer = "".join(answer_parts).strip()
+                    yield _json_event("status", {"message": "Checking the answer..."})
+                    answer = finalize_streamed_answer(body.message, streamed_answer, chunks, settings)
+                    if answer != streamed_answer:
+                        yield _json_event("replace", {"text": answer})
 
             _append_chat_message(settings, session_id, "user", body.message)
             _append_chat_message(settings, session_id, "assistant", answer)
@@ -127,6 +176,29 @@ async def chat_stream(
         media_type="application/x-ndjson",
         headers={"Cache-Control": "no-cache"},
     )
+
+
+@router.get("/tools", response_model=ToolsResponse)
+async def tools(
+    settings: Settings = Depends(get_settings),
+) -> ToolsResponse:
+    """Return the MCP tools exposed to the chatbot, if configured."""
+    if not mcp_enabled(settings):
+        return ToolsResponse(enabled=False, server_label=settings.mcp_server_label)
+
+    try:
+        return ToolsResponse(
+            enabled=True,
+            server_label=settings.mcp_server_label,
+            tools=fetch_available_tools(settings),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Tool discovery failed: {exc}",
+        )
 
 
 def _append_chat_message(

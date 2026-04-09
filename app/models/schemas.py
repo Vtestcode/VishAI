@@ -29,11 +29,33 @@ class SourceSnippet(BaseModel):
     )
 
 
+class ToolDefinition(BaseModel):
+    """A user-visible tool exposed by a connected MCP server."""
+    name: str
+    description: str = ""
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+
+
+class ToolCall(BaseModel):
+    """A tool call made during a chat response."""
+    name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+
+
 class ChatResponse(BaseModel):
     """Response body for POST /chat."""
     answer: str
     sources: list[SourceSnippet] = Field(default_factory=list)
     session_id: Optional[str] = None
+    available_tools: list[ToolDefinition] = Field(default_factory=list)
+    tool_calls: list[ToolCall] = Field(default_factory=list)
+
+
+class ToolsResponse(BaseModel):
+    """Response body for GET /tools."""
+    enabled: bool = False
+    server_label: str = ""
+    tools: list[ToolDefinition] = Field(default_factory=list)
 
 
 # ── Ingest ──────────────────────────────────────────────────────────────

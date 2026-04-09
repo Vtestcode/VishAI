@@ -457,6 +457,52 @@ body {
   padding: 18px 28px 8px;
 }
 
+.tool-panel {
+  margin: 6px 28px 0;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(118, 212, 244, 0.18);
+}
+
+.tool-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.tool-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tool-chip {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(242, 252, 255, 0.94);
+  border: 1px solid rgba(17, 150, 218, 0.14);
+}
+
+.tool-chip-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tool-chip-description {
+  max-width: 24rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .prompt-chip {
   border: 1px solid rgba(118, 212, 244, 0.22);
   background: rgba(255, 255, 255, 0.88);
@@ -536,6 +582,46 @@ body {
 
 .message p + p {
   margin-top: 12px;
+}
+
+.tool-usage {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(118, 212, 244, 0.18);
+}
+
+.tool-usage-title {
+  margin-bottom: 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+
+.tool-usage-list {
+  display: grid;
+  gap: 10px;
+}
+
+.tool-usage-item {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(239, 250, 255, 0.9);
+}
+
+.tool-usage-item strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.86rem;
+}
+
+.tool-usage-item pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 0.78rem/1.45 Consolas, "Courier New", monospace;
+  color: var(--muted);
 }
 
 .typing {
@@ -699,6 +785,16 @@ body {
   gap: 14px;
 }
 
+.widget-wrapper .tool-panel {
+  margin: 6px 14px 0;
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.widget-wrapper .tool-chip-description {
+  max-width: 100%;
+}
+
 .widget-wrapper .message {
   max-width: 88%;
   padding: 14px;
@@ -805,7 +901,8 @@ body {
   .chat-topbar,
   .chat-messages,
   .chat-input-area,
-  .quick-prompts {
+  .quick-prompts,
+  .tool-panel {
     padding-left: 16px;
     padding-right: 16px;
   }

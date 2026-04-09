@@ -19,6 +19,7 @@
     data-chat-root
     data-endpoint="/chat"
     data-stream-endpoint="/chat/stream"
+    data-tools-endpoint="/tools"
     data-session-key="vishal_portfolio_chat_session"
   >
     <div class="chat-skeleton widget-skeleton" data-skeleton aria-hidden="true">
@@ -56,6 +57,14 @@
       <button class="prompt-chip" type="button" data-prompt="Which project should I look at first?">Best project</button>
       <button class="prompt-chip" type="button" data-prompt="What should I know about Vishal?">About</button>
     </div>
+
+    <section class="tool-panel" data-tool-panel hidden>
+      <div class="tool-panel-head">
+        <strong>Connected tools</strong>
+        <span data-tool-server></span>
+      </div>
+      <div class="tool-chip-list" data-tool-list></div>
+    </section>
 
     <div class="chat-messages" data-messages>
       <div class="message bot">

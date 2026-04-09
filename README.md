@@ -1,12 +1,13 @@
 # RAG Chatbot
 
-A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, and Pinecone.
+A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, Pinecone, and optional remote MCP tools.
 
 ## Architecture
 
 - Source documents live in Amazon S3.
 - Embeddings are generated with OpenAI.
 - Vector search runs on Pinecone.
+- Optional MCP tools can be connected through the OpenAI Responses API.
 - Recruiters access the deployed web app and ask questions through the site.
 
 
@@ -19,6 +20,8 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, and 
 - Incrementally index only changed S3 files using an S3 manifest.
 - Translate queries, retrieve candidates, rerank context, and validate answers.
 - Answer recruiter-style questions.
+- Connect to a remote MCP server and let the assistant call those tools.
+- Display connected tools in the chat UI and show which tools were used in a reply.
 - Redirect unanswered questions to email when configured.
 - Serve both a full-page experience at `/` and an embeddable widget at `/widget`.
 
@@ -29,6 +32,13 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, and 
 | `OPENAI_API_KEY` | Yes | OpenAI API key |
 | `CONTACT_EMAIL` | No | Email shown when the answer is not covered by the documents |
 | `MODEL_NAME` | No | OpenAI chat model, default `gpt-4o-mini` |
+| `REASONING_MODEL_NAME` | No | OpenAI Responses API model for MCP-enabled turns, default `gpt-4.1-mini` |
+| `ENABLE_MCP` | No | Enable remote MCP integration, default `false` |
+| `MCP_SERVER_URL` | No | Remote MCP server URL, typically the SSE endpoint such as `https://your-server/sse` |
+| `MCP_SERVER_LABEL` | No | Short name shown in the UI for the connected MCP server |
+| `MCP_SERVER_DESCRIPTION` | No | Optional MCP server description passed to OpenAI |
+| `MCP_REQUIRE_APPROVAL` | No | MCP approval policy passed to OpenAI, default `never` |
+| `MCP_ALLOWED_TOOLS` | No | Optional comma-separated allowlist of MCP tool names |
 | `TOP_K` | No | Number of retrieved chunks |
 | `RETRIEVAL_CANDIDATE_K` | No | Number of candidates retrieved before reranking, default `15` |
 | `QUERY_REWRITE_COUNT` | No | Number of translated retrieval queries, default `3` |
@@ -57,6 +67,31 @@ A recruiter-facing portfolio chatbot built with FastAPI, OpenAI, Amazon S3, and 
 3. Deploy the app.
 4. Call `POST /ingest` to incrementally add changed S3 files to Pinecone.
 5. Share the deployed URL with recruiters.
+
+## Connect A Remote MCP Server
+
+1. Set these environment variables:
+
+```env
+ENABLE_MCP=true
+MCP_SERVER_URL=https://mcp-server-rag-219ad446fdd2.herokuapp.com/sse
+MCP_SERVER_LABEL=rag_tools
+MCP_REQUIRE_APPROVAL=never
+```
+
+2. Redeploy the app.
+3. Open the chatbot UI. If the MCP server is reachable, the chat panel will show a `Connected tools` section.
+4. Call `GET /tools` to verify which tools the chatbot can see.
+
+Example:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri "https://your-app.herokuapp.com/tools"
+```
+
+Notes:
+- Most remote MCP servers expose an SSE endpoint such as `/sse`, not just the site root.
+- The chatbot keeps using RAG for document context; MCP tools are added as optional extra capabilities on top.
 
 ## Ingestion
 

@@ -29,6 +29,15 @@ class Settings(BaseSettings):
 
     # --- LLM model ---
     model_name: str = os.getenv("MODEL_NAME", "gpt-4o-mini")
+    reasoning_model_name: str = os.getenv("REASONING_MODEL_NAME", "gpt-4.1-mini")
+
+    # --- Remote MCP ---
+    enable_mcp: bool = os.getenv("ENABLE_MCP", "false").lower() == "true"
+    mcp_server_url: str = os.getenv("MCP_SERVER_URL", "")
+    mcp_server_label: str = os.getenv("MCP_SERVER_LABEL", "portfolio_mcp")
+    mcp_server_description: str = os.getenv("MCP_SERVER_DESCRIPTION", "")
+    mcp_require_approval: str = os.getenv("MCP_REQUIRE_APPROVAL", "never")
+    mcp_allowed_tools: str = os.getenv("MCP_ALLOWED_TOOLS", "")
 
     # --- RAG tuning ---
     chunk_size: int = 1000

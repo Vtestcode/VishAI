@@ -7,10 +7,15 @@
   const sendBtn = root.querySelector("[data-send]");
   const statusEl = root.querySelector("[data-status]");
   const charCountEl = root.querySelector("[data-char-count]");
+  const toolPanelEl = root.querySelector("[data-tool-panel]");
+  const toolListEl = root.querySelector("[data-tool-list]");
+  const toolServerEl = root.querySelector("[data-tool-server]");
   const prompts = root.querySelectorAll("[data-prompt]");
   const endpoint = root.dataset.endpoint || "/chat";
   const streamEndpoint = root.dataset.streamEndpoint || "/chat/stream";
+  const toolsEndpoint = root.dataset.toolsEndpoint || "/tools";
   const sessionKey = root.dataset.sessionKey || "vishal_portfolio_chat_session";
+  let availableTools = [];
 
   inputEl.addEventListener("input", () => {
     autoResize();
@@ -78,6 +83,75 @@
       .join("");
   }
 
+  function renderAvailableTools(tools, serverLabel) {
+    availableTools = Array.isArray(tools) ? tools : [];
+    if (!toolPanelEl || !toolListEl || !availableTools.length) {
+      if (toolPanelEl) toolPanelEl.hidden = true;
+      return;
+    }
+
+    toolPanelEl.hidden = false;
+    if (toolServerEl) {
+      toolServerEl.textContent = serverLabel ? `via ${serverLabel}` : "";
+    }
+
+    toolListEl.innerHTML = availableTools
+      .map((tool) => {
+        const description = escapeHtml(tool.description || "No description provided.");
+        return `
+          <div class="tool-chip" title="${description}">
+            <span class="tool-chip-name">${escapeHtml(tool.name || "tool")}</span>
+            <span class="tool-chip-description">${description}</span>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  function attachToolCalls(messageEl, toolCalls) {
+    if (!messageEl || !Array.isArray(toolCalls) || !toolCalls.length) return;
+
+    const existing = messageEl.querySelector(".tool-usage");
+    if (existing) existing.remove();
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "tool-usage";
+    wrapper.innerHTML = `
+      <div class="tool-usage-title">Tools used</div>
+      <div class="tool-usage-list">
+        ${toolCalls
+          .map((toolCall) => {
+            const args = toolCall.arguments && Object.keys(toolCall.arguments).length
+              ? `<pre>${escapeHtml(JSON.stringify(toolCall.arguments, null, 2))}</pre>`
+              : "";
+            return `
+              <div class="tool-usage-item">
+                <strong>${escapeHtml(toolCall.name || "tool")}</strong>
+                ${args}
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    `;
+    messageEl.appendChild(wrapper);
+  }
+
+  async function loadAvailableTools() {
+    if (!toolsEndpoint || !toolPanelEl) return;
+
+    try {
+      const response = await fetch(toolsEndpoint);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.enabled && Array.isArray(data.tools) && data.tools.length) {
+        renderAvailableTools(data.tools, data.server_label || "");
+      }
+    } catch (_error) {
+      toolPanelEl.hidden = true;
+    }
+  }
+
   async function sendMessage() {
     const text = inputEl.value.trim();
     if (!text) return;
@@ -124,6 +198,7 @@
     const decoder = new TextDecoder();
     let buffered = "";
     let answer = "";
+    let toolCalls = [];
 
     while (true) {
       const { value, done } = await reader.read();
@@ -150,12 +225,19 @@
         } else if (event.type === "replace") {
           answer = event.text || "";
           updateMessage(botMessage, answer || "No answer returned.");
+        } else if (event.type === "tools") {
+          toolCalls = Array.isArray(event.tool_calls) ? event.tool_calls : [];
+          renderAvailableTools(
+            event.available_tools || [],
+            event.server_label || ""
+          );
         } else if (event.type === "done") {
           if (event.session_id) {
             localStorage.setItem(sessionKey, event.session_id);
           }
           answer = event.answer || answer;
           updateMessage(botMessage, answer || "No answer returned.");
+          attachToolCalls(botMessage, toolCalls);
           statusEl.textContent = "Answer delivered";
         } else if (event.type === "error") {
           throw new Error(event.message || "Streaming failed");
@@ -188,6 +270,8 @@
       localStorage.setItem(sessionKey, data.session_id);
     }
     updateMessage(botMessage, data.answer || "No answer returned.");
+    renderAvailableTools(data.available_tools || [], "");
+    attachToolCalls(botMessage, data.tool_calls || []);
     statusEl.textContent = "Answer delivered";
   }
 
@@ -200,5 +284,6 @@
   root.querySelector("[data-send]").addEventListener("click", sendMessage);
   autoResize();
   updateMeta();
+  loadAvailableTools();
   root.classList.add("is-ready");
 })();
