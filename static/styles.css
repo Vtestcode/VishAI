@@ -127,13 +127,13 @@ body {
 }
 
 .story-panel {
-  padding: 28px;
+  padding: 24px;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 24px;
+  gap: 18px;
   min-height: 0;
 }
 
@@ -168,9 +168,9 @@ body {
 }
 
 .brand-mark {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
 }
 
 .mini-brand-mark {
@@ -190,16 +190,16 @@ body {
 }
 
 .brand-subtitle {
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .story-title {
-  margin: 18px 0 14px;
+  margin: 10px 0 10px;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.9rem, 2.65vw, 3rem);
-  line-height: 0.98;
+  font-size: clamp(1.7rem, 2.35vw, 2.7rem);
+  line-height: 1;
   letter-spacing: -0.05em;
   max-width: 11ch;
 }
@@ -208,8 +208,8 @@ body {
   max-width: 30rem;
   margin: 0;
   color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.58;
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
 
 .story-copy {
@@ -271,13 +271,13 @@ body {
 .story-highlights {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
   margin-top: 2px;
 }
 
 .highlight-card {
-  padding: 12px;
-  border-radius: 18px;
+  padding: 10px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(118, 212, 244, 0.18);
   box-shadow: 0 10px 22px rgba(118, 212, 244, 0.08);
@@ -411,7 +411,7 @@ body {
   align-items: start;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 22px 12px;
+  padding: 16px 20px 10px;
   border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(244, 255, 254, 0.28));
 }
@@ -426,9 +426,9 @@ body {
 
 .chat-topbar p,
 .widget-topbar p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.45;
 }
 
 .chat-actions {
@@ -464,8 +464,8 @@ body {
 .quick-prompts {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px 22px 4px;
+  gap: 8px;
+  padding: 8px 20px 2px;
 }
 
 .tool-toggle {
@@ -614,9 +614,9 @@ body {
   background: rgba(255, 255, 255, 0.88);
   color: var(--ink);
   border-radius: 999px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
@@ -630,20 +630,21 @@ body {
 .chat-messages {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   min-height: 0;
   flex: 1;
   overflow-y: auto;
-  padding: 14px 22px 8px;
+  padding: 12px 20px 4px;
   scrollbar-gutter: stable;
+  background: linear-gradient(180deg, rgba(237, 250, 255, 0.55), rgba(255, 255, 255, 0));
 }
 
 .message {
   max-width: min(74%, 780px);
-  padding: 16px 18px;
+  padding: 14px 16px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  line-height: 1.72;
+  line-height: 1.62;
   position: relative;
   animation: rise-in 0.26s ease;
 }
@@ -749,16 +750,16 @@ body {
 }
 
 .chat-input-area {
-  padding: 10px 16px 12px;
+  padding: 8px 14px 10px;
   border-top: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(240, 255, 252, 0.18));
 }
 
 .composer {
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 26px;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 22px;
   background: var(--paper-strong);
   border: 1px solid rgba(118, 212, 244, 0.16);
   box-shadow: 0 18px 34px rgba(69, 167, 194, 0.12);
@@ -766,7 +767,7 @@ body {
 
 .composer textarea {
   width: 100%;
-  min-height: 38px;
+  min-height: 34px;
   max-height: 180px;
   resize: none;
   border: 0;
@@ -786,7 +787,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
 }
 
 .composer-meta {
@@ -800,8 +801,8 @@ body {
 .send-button {
   border: 0;
   border-radius: 18px;
-  padding: 14px 22px;
-  min-width: 134px;
+  padding: 12px 20px;
+  min-width: 124px;
   font: inherit;
   font-weight: 700;
   color: #f7fffd;
@@ -823,10 +824,10 @@ body {
 }
 
 .input-hint {
-  margin: 6px 6px 0;
+  margin: 4px 6px 0;
   color: var(--muted);
-  font-size: 0.8rem;
-  line-height: 1.4;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .widget-wrapper {
